@@ -66,13 +66,14 @@ export default function Signup() {
   return (
     <div className="login-card">
       <h2>Sign Up</h2>
-      <form onSubmit={handleSignup}>
+      <form onSubmit={handleSignup} autoComplete="on">
         <input
           type="text"
           placeholder="Full Name"
           className="login-input"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          autoComplete="name"
           required
         />
         <input
@@ -81,6 +82,7 @@ export default function Signup() {
           className="login-input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
           required
         />
         <input
@@ -89,6 +91,7 @@ export default function Signup() {
           className="login-input"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete="new-password"
           required
         />
 

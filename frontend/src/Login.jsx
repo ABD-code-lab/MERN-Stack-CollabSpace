@@ -61,13 +61,14 @@ export default function Login({ onLoginSuccess }) {
   return (
     <div className="login-card">
       <h2>Login</h2>
-      <form onSubmit={handleLogin}>
+      <form onSubmit={handleLogin} autoComplete="on">
         <input
           type="email"
           placeholder="Email address"
           className="login-input"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
           required
         />
         <input
@@ -76,6 +77,7 @@ export default function Login({ onLoginSuccess }) {
           className="login-input"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
           required
         />
         {error && <p className="error-text">{error}</p>}
