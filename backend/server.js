@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import projectRoutes from "./routes/projectRoutes.js"
 
 // Load env variables
 dotenv.config();
@@ -18,6 +19,7 @@ app.use(express.json()); // Parse incoming JSON
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/projects",projectRoutes)
 
 // Default route (for testing server is alive)
 app.get("/", (req, res) => {
