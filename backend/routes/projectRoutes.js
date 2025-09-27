@@ -1,13 +1,20 @@
 import express from "express";
-import { createProject, getProjects, getProjectById, updateProject, deleteProject } from "../controllers/projectController.js";
-import { protect } from "../middleware/authMiddleware.js"; 
+import {
+  createProject,
+  getProjects,
+  updateProject,
+  deleteProject,
+} from "../controllers/projectController.js";
+import { protect, authorize } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", protect, createProject);   
-router.get("/", protect, getProjects);         
-router.get("/:id", protect, getProjectById);
-router.put("/:id", protect, updateProject);    
-router.delete("/:id", protect, deleteProject);
+// GET projects: both Admin & Member can view
+router.get("/", protect, getProjects);
+
+// Admin-only routes
+router.post("/", protect, authorize("admin"), createProject);
+router.put("/:id", protect, authorize("admin"), updateProject);
+router.delete("/:id", protect, authorize("admin"), deleteProject);
 
 export default router;

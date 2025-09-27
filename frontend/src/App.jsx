@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Login from "./Login";
 import Signup from "./Signup";
 import AdminDashboard from "./AdminDashboard";
@@ -25,18 +25,30 @@ export default function App() {
     setRole("");
   };
 
+  // Custom Protected Route wrapper
+  const ProtectedRoute = ({ children, allowedRole }) => {
+    const location = useLocation();
+    if (!token) {
+      return <Navigate to="/" state={{ from: location }} replace />;
+    }
+    if (allowedRole && role !== allowedRole) {
+      return <Navigate to="/" replace />;
+    }
+    return children;
+  };
+
   return (
     <Router>
       <Routes>
-        {/* Public routes */}
+        {/* Public route: Login/Signup */}
         <Route
           path="/"
           element={
             token ? (
               role === "admin" ? (
-                <Navigate to="/admin" />
+                <Navigate to="/admin" replace />
               ) : (
-                <Navigate to="/member" />
+                <Navigate to="/member" replace />
               )
             ) : showLogin ? (
               <Login onLoginSuccess={handleLoginSuccess} />
@@ -50,11 +62,9 @@ export default function App() {
         <Route
           path="/admin"
           element={
-            token && role === "admin" ? (
+            <ProtectedRoute allowedRole="admin">
               <AdminDashboard onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" />
-            )
+            </ProtectedRoute>
           }
         />
 
@@ -62,11 +72,9 @@ export default function App() {
         <Route
           path="/member"
           element={
-            token && role === "member" ? (
+            <ProtectedRoute allowedRole="member">
               <MemberDashboard onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/" />
-            )
+            </ProtectedRoute>
           }
         />
       </Routes>
@@ -86,4 +94,3 @@ export default function App() {
     </Router>
   );
 }
-
