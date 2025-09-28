@@ -13,9 +13,14 @@ export const getProjects = async (req, res) => {
 // Create project (Admin only)
 export const createProject = async (req, res) => {
   try {
-    const project = await Project.create(req.body);
+    const project = await Project.create({
+      ...req.body,
+      createdBy: req.user._id   
+    });
+
     return res.status(201).json({ success: true, project });
   } catch (err) {
+    console.error("Error creating project:", err);
     return res.status(400).json({ success: false, message: "Invalid project data" });
   }
 };
