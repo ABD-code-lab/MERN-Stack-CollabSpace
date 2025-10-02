@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
-import './AdminDashboard.css'; // We'll create this CSS file
+import "./AdminDashboard.css";
 
 export default function AdminDashboard({ onLogout }) {
   const [projects, setProjects] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -12,25 +14,28 @@ export default function AdminDashboard({ onLogout }) {
     endDate: "",
     status: "pending",
   });
+  const [memberForm, setMemberForm] = useState({
+    name: "",
+    email: "",
+    assignedProject: "",
+  });
+
   const [editId, setEditId] = useState(null);
+  const [editMemberId, setEditMemberId] = useState(null);
   const [activeTab, setActiveTab] = useState("projects");
 
   const token = localStorage.getItem("token");
 
-const fetchProjects = async () => {
-  console.log("Project submit values:", form);
-
+  // ----------------- Projects -----------------
+  const fetchProjects = async () => {
   try {
     setLoading(true);
     const res = await fetch("http://localhost:5000/api/projects", {
       headers: { Authorization: `Bearer ${token}` },
     });
     const data = await res.json();
-    if (data.success) {
-      setProjects(data.projects);
-    } else {
-      setError(data.message || "Failed to load projects");
-    }
+    if (data.success) setProjects(data.projects);
+    else setError(data.message || "Failed to load projects");
   } catch (err) {
     console.error(err);
     setError("Server error");
@@ -40,24 +45,17 @@ const fetchProjects = async () => {
 };
 
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  const handleChange = (e) => {
+  const handleProjectChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const handleProjectSubmit = async (e) => {
     e.preventDefault();
-     console.log("Submitting project form:", form);
     try {
-
       const url = editId
         ? `http://localhost:5000/api/projects/${editId}`
         : "http://localhost:5000/api/projects";
       const method = editId ? "PUT" : "POST";
-
       const res = await fetch(url, {
         method,
         headers: {
@@ -66,22 +64,25 @@ const fetchProjects = async () => {
         },
         body: JSON.stringify(form),
       });
-
       const data = await res.json();
       if (data.success) {
         fetchProjects();
-        setForm({ title: "", description: "", startDate: "", endDate: "", status: "pending" });
+        setForm({
+          title: "",
+          description: "",
+          startDate: "",
+          endDate: "",
+          status: "pending",
+        });
         setEditId(null);
-      } else {
-        alert(data.message || "Action failed");
-      }
+      } else alert(data.message || "Action failed");
     } catch (err) {
       console.error(err);
       alert("Error while saving project");
     }
   };
 
-  const handleEdit = (project) => {
+  const handleEditProject = (project) => {
     setForm({
       title: project.title,
       description: project.description,
@@ -93,39 +94,104 @@ const fetchProjects = async () => {
     setActiveTab("form");
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this project?")) return;
+  const handleDeleteProject = async (id) => {
+    if (!window.confirm("Delete this project?")) return;
     try {
       const res = await fetch(`http://localhost:5000/api/projects/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success) {
-        fetchProjects();
-      } else {
-        alert(data.message || "Delete failed");
-      }
+      if (data.success) fetchProjects();
+      else alert(data.message || "Delete failed");
     } catch (err) {
       console.error(err);
       alert("Error deleting project");
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "completed": return "#10b981";
-      case "in-progress": return "#f59e0b";
-      case "pending": return "#ef4444";
-      default: return "#6b7280";
+  const fetchMembers = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/members", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) setMembers(data.members);
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const stats = {
-    total: projects.length,
-    completed: projects.filter(p => p.status === "completed").length,
-    inProgress: projects.filter(p => p.status === "in-progress").length,
-    pending: projects.filter(p => p.status === "pending").length
+  const handleMemberChange = (e) => {
+    setMemberForm({ ...memberForm, [e.target.name]: e.target.value });
+  };
+
+  const handleMemberSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const url = editMemberId
+        ? `http://localhost:5000/api/members/${editMemberId}`
+        : "http://localhost:5000/api/members";
+      const method = editMemberId ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(memberForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchMembers();
+        setMemberForm({ name: "", email: "", assignedProject: "" });
+        setEditMemberId(null);
+      } else alert(data.message || "Member action failed");
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleEditMember = (member) => {
+    setMemberForm({
+      name: member.name,
+      email: member.email,
+      assignedProject: member.assignedProject || "",
+    });
+    setEditMemberId(member._id);
+    setActiveTab("members");
+  };
+
+  const handleDeleteMember = async (id) => {
+    if (!window.confirm("Delete this member?")) return;
+    try {
+      const res = await fetch(`http://localhost:5000/api/members/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) fetchMembers();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+    fetchMembers();
+  }, []);
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "completed":
+        return "#10b981";
+      case "in-progress":
+        return "#f59e0b";
+      case "pending":
+        return "#ef4444";
+      default:
+        return "#6b7280";
+    }
   };
 
   return (
@@ -135,223 +201,176 @@ const fetchProjects = async () => {
         <div className="header-content">
           <div className="welcome-section">
             <h1>👑 Admin Dashboard</h1>
-            <p>Manage your projects efficiently</p>
+            <p>Manage your projects & members</p>
           </div>
           <button className="logout-btn" onClick={onLogout}>
-            <span>🚪 Logout</span>
+            🚪 Logout
           </button>
         </div>
       </header>
 
-      {/* Stats Overview */}
-      <section className="stats-overview">
-        <div className="stat-card">
-          <div className="stat-icon">📊</div>
-          <div className="stat-info">
-            <h3>{stats.total}</h3>
-            <p>Total Projects</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">✅</div>
-          <div className="stat-info">
-            <h3>{stats.completed}</h3>
-            <p>Completed</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">🔄</div>
-          <div className="stat-info">
-            <h3>{stats.inProgress}</h3>
-            <p>In Progress</p>
-          </div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-icon">⏳</div>
-          <div className="stat-info">
-            <h3>{stats.pending}</h3>
-            <p>Pending</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Navigation Tabs */}
+      {/* Tabs */}
       <nav className="dashboard-nav">
-        <button 
+        <button
           className={`nav-tab ${activeTab === "projects" ? "active" : ""}`}
           onClick={() => setActiveTab("projects")}
         >
           📋 Projects
         </button>
-        <button 
+        <button
           className={`nav-tab ${activeTab === "form" ? "active" : ""}`}
           onClick={() => setActiveTab("form")}
         >
-          {editId ? "✏️ Edit Project" : "➕ Add Project"}
+          ➕ Add Project
+        </button>
+        <button
+          className={`nav-tab ${activeTab === "members" ? "active" : ""}`}
+          onClick={() => setActiveTab("members")}
+        >
+          👥 Members
         </button>
       </nav>
 
-      {/* Main Content */}
       <main className="dashboard-main">
+        {/* Project Form */}
         {activeTab === "form" && (
-          <section className="form-section">
-            <div className="form-card">
-              <h2>{editId ? "Edit Project" : "Create New Project"}</h2>
-              <form onSubmit={handleSubmit} className="project-form">
-                <div className="form-group">
-                  <label htmlFor="title">Project Title</label>
-                  <input 
-                    id="title"
-                    name="title" 
-                    placeholder="Enter project title" 
-                    value={form.title} 
-                    onChange={handleChange} 
-                    required 
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="description">Description</label>
-                  <textarea 
-                    id="description"
-                    name="description" 
-                    placeholder="Enter project description" 
-                    value={form.description} 
-                    onChange={handleChange} 
-                    required 
-                    rows="3"
-                  />
-                </div>
-                
-                <div className="form-row">
-                  <div className="form-group">
-                    <label htmlFor="startDate">Start Date</label>
-                    <input 
-                      id="startDate"
-                      name="startDate" 
-                      type="date" 
-                      value={form.startDate} 
-                      onChange={handleChange} 
-                      required 
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label htmlFor="endDate">End Date</label>
-                    <input 
-                      id="endDate"
-                      name="endDate" 
-                      type="date" 
-                      value={form.endDate} 
-                      onChange={handleChange} 
-                      required 
-                    />
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="status">Status</label>
-                  <select 
-                    id="status"
-                    name="status" 
-                    value={form.status} 
-                    onChange={handleChange}
-                  >
-                    <option value="pending">⏳ Pending</option>
-                    <option value="in-progress">🔄 In Progress</option>
-                    <option value="completed">✅ Completed</option>
-                  </select>
-                </div>
-                
-                <div className="form-actions">
-                  <button type="submit" className="submit-btn">
-                    {editId ? "Update Project" : "Create Project"}
-                  </button>
-                  {editId && (
-                    <button 
-                      type="button" 
-                      className="cancel-btn"
-                      onClick={() => {
-                        setEditId(null);
-                        setForm({ title: "", description: "", startDate: "", endDate: "", status: "pending" });
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  )}
-                </div>
-              </form>
-            </div>
-          </section>
+          <form onSubmit={handleProjectSubmit} className="project-form">
+            <input
+              name="title"
+              placeholder="Project Title"
+              value={form.title}
+              onChange={handleProjectChange}
+              required
+            />
+            <textarea
+              name="description"
+              placeholder="Description"
+              value={form.description}
+              onChange={handleProjectChange}
+              required
+            />
+            <input
+              type="date"
+              name="startDate"
+              value={form.startDate}
+              onChange={handleProjectChange}
+              required
+            />
+            <input
+              type="date"
+              name="endDate"
+              value={form.endDate}
+              onChange={handleProjectChange}
+              required
+            />
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleProjectChange}
+            >
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+            <button type="submit">
+              {editId ? "Update Project" : "Create Project"}
+            </button>
+          </form>
         )}
 
-        {activeTab === "projects" && (
-          <section className="projects-section">
-            <div className="projects-header">
-              <h2>Project Management</h2>
-              <button 
-                className="add-project-btn"
-                onClick={() => {
-                  setEditId(null);
-                  setForm({ title: "", description: "", startDate: "", endDate: "", status: "pending" });
-                  setActiveTab("form");
-                }}
-              >
-                ➕ Add New Project
-              </button>
-            </div>
+        {/* Projects */}
+{activeTab === "projects" && (
+  <div className="projects-grid">
+    {projects.length === 0 ? (
+      <p>No projects available</p> 
+    ) : (
+      projects.map((project) => (
+        <div key={project._id} className="project-card">
+    
+          <h3 className="project-title">{project.title}</h3>
 
-            {loading ? (
-              <div className="loading-state">
-                <div className="spinner"></div>
-                <p>Loading projects...</p>
-              </div>
-            ) : error ? (
-              <div className="error-state">
-                <p>❌ {error}</p>
-              </div>
-            ) : (
-              <div className="projects-grid">
-                {projects.map((project) => (
-                  <div key={project._id} className="project-card">
-                    <div className="project-header">
-                      <h3>{project.title}</h3>
-                      <span 
-                        className="status-badge"
-                        style={{ backgroundColor: getStatusColor(project.status) }}
-                      >
-                        {project.status}
-                      </span>
-                    </div>
-                    
-                    <p className="project-description">{project.description}</p>
-                    
-                    <div className="project-dates">
-                      <div className="date-info">
-                        <span>📅 Start: {new Date(project.startDate).toLocaleDateString()}</span>
-                        <span>🎯 End: {new Date(project.endDate).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="project-actions">
-                      <button 
-                        className="edit-btn"
-                        onClick={() => handleEdit(project)}
-                      >
-                        ✏️ Edit
-                      </button>
-                      <button 
-                        className="delete-btn"
-                        onClick={() => handleDelete(project._id)}
-                      >
-                        🗑️ Delete
-                      </button>
-                    </div>
-                  </div>
+          <p className="project-description">{project.description}</p>
+          <p className="project-dates">
+            <strong>Start:</strong>{" "}
+            {project.startDate
+              ? new Date(project.startDate).toLocaleDateString()
+              : "N/A"}{" "}
+            | <strong>End:</strong>{" "}
+            {project.endDate
+              ? new Date(project.endDate).toLocaleDateString()
+              : "N/A"}
+          </p>
+          <span
+            style={{ background: getStatusColor(project.status) }}
+            className="status-badge"
+          >
+            {project.status}
+          </span>
+
+          <div className="project-actions">
+            <button onClick={() => handleEditProject(project)}>✏️ Edit</button>
+            <button onClick={() => handleDeleteProject(project._id)}>🗑️ Delete</button>
+          </div>
+        </div>
+      ))
+    )}
+  </div>
+)}
+
+        {/* Members */}
+        {activeTab === "members" && (
+          <div className="members-section">
+            <form onSubmit={handleMemberSubmit} className="member-form">
+              <input
+                name="name"
+                placeholder="Member Name"
+                value={memberForm.name}
+                onChange={handleMemberChange}
+                required
+              />
+              <input
+                type="email"
+                name="email"
+                placeholder="Email"
+                value={memberForm.email}
+                onChange={handleMemberChange}
+                required
+              />
+              <select
+                name="assignedProject"
+                value={memberForm.assignedProject}
+                onChange={handleMemberChange}
+              >
+                <option value="">No project assigned</option>
+                {projects.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.title}
+                  </option>
                 ))}
-              </div>
-            )}
-          </section>
+              </select>
+              <button type="submit">
+                {editMemberId ? "Update Member" : "Add Member"}
+              </button>
+            </form>
+
+            <div className="members-list">
+              {members.map((m) => (
+                <div key={m._id} className="member-card">
+                  <h4>{m.name}</h4>
+                  <p>{m.email}</p>
+                  <p>
+                    Assigned:{" "}
+                    {projects.find((p) => p._id === m.assignedProject)?.title ||
+                      "None"}
+                  </p>
+                  <div>
+                    <button onClick={() => handleEditMember(m)}>✏️</button>
+                    <button onClick={() => handleDeleteMember(m._id)}>🗑️</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </main>
     </div>
